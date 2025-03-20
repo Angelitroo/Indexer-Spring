@@ -1,5 +1,6 @@
 package com.scrapspringboot.controller;
 
+import com.scrapspringboot.model.Product;
 import com.scrapspringboot.service.ScrapPComponentes;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,7 +17,7 @@ public class ScrapController {
     }
 
     @GetMapping("/search/{value}")
-    public List<String> getValue(@PathVariable String value) {
+    public List<Product> getValue(@PathVariable String value) {
         return scrapPComponentes.scrape(value);
     }
 }
