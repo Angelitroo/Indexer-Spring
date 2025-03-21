@@ -26,7 +26,7 @@ public class ScrapPComponentes {
         this.chromeOptions = chromeOptions;
     }
 
-    public List<Product> scrape(final String value) {
+    public List<Product> scrapPComponentes(final String value) {
         List<Product> resultados = new ArrayList<>();
         ChromeDriver driver = new ChromeDriver(chromeOptions);
 
@@ -87,7 +87,8 @@ public class ScrapPComponentes {
                     String url = urlElements.isEmpty() ? "No product url found" : urlElements.get(0).getAttribute("href");
 
 
-                    if (!"No discount found".equals(discount)) {
+                    if (!"No discount found".equals(discount)
+                    ) {
                         Product product = new Product(title, discount, actualPrice, oldPrice, image, rating, delivery, url);
                         resultados.add(product);
                     }
