@@ -1,6 +1,7 @@
 package com.scrapspringboot.service;
 
 import com.scrapspringboot.model.Product;
+import lombok.AllArgsConstructor;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -42,10 +43,14 @@ public class ScrapPComponentes {
                     List<WebElement> titleElements = item.findElements(By.cssSelector("h3.product-card__title"));
                     String title = titleElements.isEmpty() ? "No title found" : titleElements.get(0).getText().trim();
 
+                    // Descuento
+                    List<WebElement> discountElements = item.findElements(By.cssSelector("span.product-card__img-container-discount-badge"));
+                    String discount = discountElements.isEmpty() ? "No discount found" : discountElements.get(0).getText().trim();
+
                     // Precio
                     List<WebElement> priceElements = item.findElements(By.cssSelector("div.product-card__price-container span"));
-                    String actualPrice = "No price found";
-                    String oldPrice = "";
+                    Double actualPrice = 0.0;
+                    Double oldPrice = actualPrice;
                     List<Double> priceValues = new ArrayList<>();
 
                     for (WebElement priceElement : priceElements) {
@@ -58,12 +63,13 @@ public class ScrapPComponentes {
                     }
                     if (!priceValues.isEmpty()) {
                         priceValues.sort(Double::compareTo);
-                        actualPrice = String.format("%.2f€", priceValues.get(0));
+                        actualPrice = priceValues.get(0);
                         if (priceValues.size() > 1) {
-                            oldPrice = String.format("%.2f€", priceValues.get(priceValues.size() - 1));
+                            oldPrice = priceValues.get(priceValues.size() - 1);
+                        } else {
+                            oldPrice = actualPrice;
                         }
                     }
-
                     // Imagen
                     List<WebElement> imageElements = item.findElements(By.cssSelector("div.product-card__img-container img"));
                     String image = imageElements.isEmpty() ? "No image found" : imageElements.get(0).getAttribute("src");
@@ -74,11 +80,17 @@ public class ScrapPComponentes {
 
                     // Información de entrega
                     List<WebElement> deliveryElements = item.findElements(By.cssSelector("div.product-card__delivery-container span"));
-                    String deliveryInfo = deliveryElements.isEmpty() ? "No delivery info found" : deliveryElements.get(0).getText().trim();
+                    String delivery = deliveryElements.isEmpty() ? "No delivery info found" : deliveryElements.get(0).getText().trim();
+
+                    // Enlace Producto usando el atributo data-testid
+                    List<WebElement> urlElements = item.findElements(By.cssSelector("a.product-card__link"));
+                    String url = urlElements.isEmpty() ? "No product url found" : urlElements.get(0).getAttribute("href");
 
 
-                    Product product = new Product(title, actualPrice, oldPrice, image, rating, deliveryInfo);
-                    resultados.add(product);
+                    if (!"No discount found".equals(discount)) {
+                        Product product = new Product(title, discount, actualPrice, oldPrice, image, rating, delivery, url);
+                        resultados.add(product);
+                    }
 
                 } catch (Exception e) {
                     logger.error("Error obteniendo los datos de un producto: {}", e.getMessage());

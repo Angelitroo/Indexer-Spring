@@ -1,32 +1,46 @@
 package com.scrapspringboot.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.awt.*;
+
+
 public class Product {
     private String title;
-    private String actualPrice;
-    private String oldPrice;
+    private String discount;
+    private Double actualPrice;
+    private Double oldPrice;
     private String image;
     private String rating;
-    private String deliveryInfo;
+    private String delivery;
+    private String url;
 
-    public Product(String title, String actualPrice, String oldPrice, String image, String rating, String deliveryInfo) {
+    public Product(String title, String discount, Double actualPrice, Double oldPrice, String image, String rating, String delivery, String url) {
         this.title = title;
+        this.discount = discount;
         this.actualPrice = actualPrice;
         this.oldPrice = oldPrice;
         this.image = image;
         this.rating = rating;
-        this.deliveryInfo = deliveryInfo;
+        this.delivery = delivery;
+        this.url = url;
     }
 
-    // Getters necesarios para la serialización
     public String getTitle() {
         return title;
     }
 
-    public String getActualPrice() {
+    public String getDiscount() {
+        return discount;
+    }
+
+    public Double getActualPrice() {
         return actualPrice;
     }
 
-    public String getOldPrice() {
+    public Double getOldPrice() {
         return oldPrice;
     }
 
@@ -38,7 +52,11 @@ public class Product {
         return rating;
     }
 
-    public String getDeliveryInfo() {
-        return deliveryInfo;
+    public String getDelivery() {
+        return delivery;
+    }
+
+    public String getUrl() {
+        return url;
     }
 }
