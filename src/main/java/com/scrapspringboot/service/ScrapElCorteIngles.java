@@ -18,7 +18,8 @@ import java.util.List;
 @Service
 public class ScrapElCorteIngles {
 
-    private static final String BASE_URL = "https://www.elcorteingles.es/videojuegos/ps5/?s=";
+    private static final String BASE_URL = "https://www.elcorteingles.es/search-nwx/?s=";
+    private static final String SEARCH_TYPE = "&stype=text_box_multi";
     private final ChromeOptions chromeOptions;
 
     public ScrapElCorteIngles(ChromeOptions chromeOptions) {
@@ -30,68 +31,18 @@ public class ScrapElCorteIngles {
         ChromeDriver driver = new ChromeDriver(chromeOptions);
 
         try {
-            String url = BASE_URL + value;
-            driver.get(url);
-
+            driver.get(BASE_URL + value + SEARCH_TYPE);
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
             wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("script")));
 
-            List<WebElement> scripts = driver.findElements(By.tagName("script"));
-            for (WebElement script : scripts) {
-                String scriptContent = script.getAttribute("innerHTML");
-
-                if (scriptContent.contains("dataLayer =")) {
-                    int startIndex = scriptContent.indexOf("dataLayer =") + "dataLayer =".length();
-                    String jsonText = scriptContent.substring(startIndex).trim();
-                    if (jsonText.endsWith(";")) {
-                        jsonText = jsonText.substring(0, jsonText.length() - 1);
-                    }
-
-                    JSONArray dataLayerArray = new JSONArray(jsonText);
-                    if (dataLayerArray.length() > 0) {
-                        JSONObject firstObject = dataLayerArray.getJSONObject(0);
+            for (WebElement script : driver.findElements(By.tagName("script"))) {
+                String content = script.getAttribute("innerHTML");
+                if (content.contains("dataLayer =")) {
+                    JSONArray dataLayer = extractDataLayer(content);
+                    if (dataLayer.length() > 0) {
+                        JSONObject firstObject = dataLayer.getJSONObject(0);
                         if (firstObject.has("products")) {
-                            JSONArray products = firstObject.getJSONArray("products");
-                            for (int i = 0; i < products.length(); i++) {
-                                JSONObject productObj = products.getJSONObject(i);
-                                String title = productObj.optString("name", "N/A");
-
-                                JSONObject priceObj = productObj.optJSONObject("price");
-                                double fPrice = priceObj != null ? priceObj.optDouble("f_price", 0) : 0;
-
-                                String discount = "No discount";
-                                Double oldPrice = fPrice;
-                                String rating = "No rating";
-                                String delivery = "No delivery info";
-
-                                // Extract URL and image for this product
-                                String productUrl = "";
-                                String imageUrl = "";
-
-                                // Get URL from link with itemprop="url"
-                                List<WebElement> urlElements = driver.findElements(By.cssSelector("link[itemprop='url']"));
-                                if (!urlElements.isEmpty()) {
-                                    productUrl = urlElements.get(0).getAttribute("href");
-                                }
-
-                                // Get image from meta with itemprop="image"
-                                List<WebElement> imgElements = driver.findElements(By.cssSelector("meta[itemprop='image']"));
-                                if (!imgElements.isEmpty()) {
-                                    imageUrl = imgElements.get(0).getAttribute("content");
-                                }
-
-                                Product product = new Product(
-                                        title,
-                                        discount,
-                                        fPrice,
-                                        oldPrice,
-                                        imageUrl,
-                                        rating,
-                                        delivery,
-                                        productUrl
-                                );
-                                productList.add(product);
-                            }
+                            processProducts(firstObject.getJSONArray("products"), productList);
                         }
                     }
                     break;
@@ -104,5 +55,58 @@ public class ScrapElCorteIngles {
         }
 
         return productList;
+    }
+
+    private JSONArray extractDataLayer(String content) {
+        int startIndex = content.indexOf("dataLayer =") + "dataLayer =".length();
+        String jsonText = content.substring(startIndex).trim();
+        if (jsonText.endsWith(";")) {
+            jsonText = jsonText.substring(0, jsonText.length() - 1);
+        }
+        return new JSONArray(jsonText);
+    }
+
+    private void processProducts(JSONArray products, List<Product> productList) {
+        for (int i = 0; i < products.length(); i++) {
+            JSONObject product = products.getJSONObject(i);
+
+            String title = product.getString("name");
+
+            JSONObject priceObj = product.getJSONObject("price");
+            double actualPrice = priceObj.optDouble("f_price", 0.0);
+            double oldPrice = priceObj.optDouble("o_price", actualPrice);
+
+            String discount = "No discount";
+            if (priceObj.optInt("discount_percent", 0) > 0) {
+                discount = priceObj.getInt("discount_percent") + "%";
+            }
+
+            JSONObject badges = product.getJSONObject("badges");
+            String delivery = badges.optBoolean("express_delivery", false) ? "Express delivery" : "Standard delivery";
+
+            String image = product.optJSONObject("media") != null ?
+                    "https://cdn.elcorteingles.es/images/p/" + product.getString("id") :
+                    "No image found";
+
+            String rating = "No rating found";
+
+            Product productObj = new Product(
+                    title,
+                    discount,
+                    actualPrice,
+                    oldPrice,
+                    image,
+                    rating,
+                    delivery,
+                    buildProductUrl(product)
+            );
+            productList.add(productObj);
+        }
+    }
+
+    private String buildProductUrl(JSONObject product) {
+        String[] category = product.getJSONArray("category").toList().toArray(new String[0]);
+        String urlPath = String.join("/", category).toLowerCase();
+        return "https://www.elcorteingles.es/" + urlPath + "/" + product.getString("id");
     }
 }

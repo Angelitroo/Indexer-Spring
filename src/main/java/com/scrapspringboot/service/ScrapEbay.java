@@ -36,53 +36,52 @@ public class ScrapEbay {
 
             for (WebElement item : items) {
                 try {
-                    // Title
                     WebElement linkElement = item.findElement(By.cssSelector("a.s-item__link"));
                     String title;
                     try {
                         WebElement titleElement = linkElement.findElement(By.cssSelector("div.s-item__title"));
                         title = titleElement.getText();
                     } catch (Exception e) {
-                        // fallback: the link text itself
                         title = linkElement.getText();
                     }
 
-                    // Link
-                    String productUrl = linkElement.getAttribute("href");
+                    if (title.equals("Shop on eBay")) {
+                        continue;
+                    }
 
-                    // Price
+                    String productUrl = linkElement.getAttribute("href");
                     String priceText;
                     try {
                         WebElement priceElement = item.findElement(By.cssSelector("span.s-item__price"));
-                        priceText = priceElement.getText();
+                        priceText = priceElement.getText().split(" ")[0]; // Take first part in case of price ranges
                     } catch (Exception e) {
                         priceText = "0.0";
                     }
 
-                    String numeric = priceText
-                            .replace("EUR", "")
-                            .replace("€", "")
-                            .replace(",", ".")
-                            .trim();
                     Double actualPrice = 0.0;
                     try {
+                        String numeric = priceText
+                                .replace("EUR", "")
+                                .replace("€", "")
+                                .replace("$", "")
+                                .replace(",", ".")
+                                .trim();
                         actualPrice = Double.valueOf(numeric);
                     } catch (NumberFormatException e) {
                     }
 
-                    String discount = "No discount";
-                    Double oldPrice = actualPrice;
-
-                    String rating = "No rating found";
-                    String delivery = "No delivery info";
-
-                    String image = "";
+                    String image;
                     try {
-                        WebElement imgElement = item.findElement(By.cssSelector("img.s-item__image-img"));
+                        WebElement imgElement = item.findElement(By.cssSelector("div.s-item__image-wrapper img"));
                         image = imgElement.getAttribute("src");
                     } catch (Exception e) {
                         image = "No image found";
                     }
+
+                    String discount = "No discount";
+                    Double oldPrice = actualPrice;
+                    String rating = "No rating found";
+                    String delivery = "No delivery info";
 
                     Product product = new Product(
                             title,

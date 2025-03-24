@@ -2,10 +2,14 @@ package com.scrapspringboot.controller;
 
 import com.scrapspringboot.model.Product;
 import com.scrapspringboot.service.*;
+import com.scrapspringboot.util.ScrapAnalyzer;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,17 +23,18 @@ public class ScrapController {
     private final ScrapEbay scrapEbay;
     private final ScrapMediaMarkt scrapMediaMarkt;
     private final ScrapElCorteIngles scrapElCorteIngles;
-
+    private final ChromeOptions chromeOptions;
 
     public ScrapController(ScrapEbay scrapEbay,
                            ScrapMediaMarkt scrapMediaMarkt,
-                           ScrapElCorteIngles scrapElCorteIngles
-                           ) {
+                           ScrapElCorteIngles scrapElCorteIngles,
+                           ChromeOptions chromeOptions) {
         this.scrapEbay = scrapEbay;
         this.scrapMediaMarkt = scrapMediaMarkt;
         this.scrapElCorteIngles = scrapElCorteIngles;
-
+        this.chromeOptions = chromeOptions;
     }
+
 
     @GetMapping("/search/{value}")
     public ResponseEntity<List<Product>> getProducts(@PathVariable String value) {
@@ -68,7 +73,6 @@ public class ScrapController {
                 .filter(p -> {
                     double price = p.getActualPrice();
                     double relativeDifference = Math.abs(price - median) / median;
-
                     // Filter out prices that deviate too much from median
                     return relativeDifference <= deviationThreshold;
 
@@ -80,6 +84,7 @@ public class ScrapController {
 
     private double calculateMedian(List<Product> products) {
         List<Double> prices = products.stream()
+                .limit(5)  // Avoids using irrelevant data like controllers.
                 .map(Product::getActualPrice)
                 .sorted()
                 .collect(Collectors.toList());
@@ -91,7 +96,6 @@ public class ScrapController {
         } else {
             return prices.get(size/2);
         }
-
     }
     private List<Product> getTop5ClosestToMedian(List<Product> products, double median) {
         return products.stream()
