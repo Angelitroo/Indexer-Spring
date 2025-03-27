@@ -24,17 +24,23 @@ public class ScrapController {
     private final ScrapMediaMarkt scrapMediaMarkt;
     private final ScrapElCorteIngles scrapElCorteIngles;
     private final ScrapCarrefour scrapCarrefour;
+    private final ScrapAmazon scrapAmazon;
+    private final ScrapPComponentes scrapPComponentes;
     private final ChromeOptions chromeOptions;
 
     public ScrapController(ScrapEbay scrapEbay,
                            ScrapMediaMarkt scrapMediaMarkt,
                            ScrapElCorteIngles scrapElCorteIngles,
                            ScrapCarrefour scrapCarrefour,
+                            ScrapAmazon scrapAmazon,
+                            ScrapPComponentes scrapPComponentes,
                            ChromeOptions chromeOptions) {
         this.scrapEbay = scrapEbay;
         this.scrapMediaMarkt = scrapMediaMarkt;
         this.scrapElCorteIngles = scrapElCorteIngles;
         this.scrapCarrefour = scrapCarrefour;
+        this.scrapAmazon = scrapAmazon;
+        this.scrapPComponentes = scrapPComponentes;
         this.chromeOptions = chromeOptions;
     }
 
@@ -45,38 +51,52 @@ public class ScrapController {
         List<Product> mediaMarktProducts = scrapMediaMarkt.scrapMediaMarkt(value);
         List<Product> corteInglesProducts = scrapElCorteIngles.scrapElCorteIngles(value);
         List<Product> carrefourProducts = scrapCarrefour.scrapCarrefour(value);
+        List<Product> amazonProducts = scrapAmazon.scrapAmazon(value);
+        List<Product> pccomponentesProducts = scrapPComponentes.scrapPComponentes(value);
 
         logger.info("eBay products found: {}", ebayProducts.size());
         logger.info("MediaMarkt products found: {}", mediaMarktProducts.size());
         logger.info("El Corte Inglés products found: {}", corteInglesProducts.size());
         logger.info("Carrefour products found: {}", carrefourProducts.size());
+        logger.info("Amazon products found: {}", amazonProducts.size());
+        logger.info("PcComponentes products found: {}", pccomponentesProducts.size());
 
         double ebayMedian = calculateMedian(ebayProducts);
         double mediaMarktMedian = calculateMedian(mediaMarktProducts);
         double corteInglesMedian = calculateMedian(corteInglesProducts);
         double carrefourMedian = calculateMedian(carrefourProducts);
+        double amazonMedian = calculateMedian(amazonProducts);
+        double pccomponentesMedian = calculateMedian(pccomponentesProducts);
 
         logger.info("eBay median price: {}", ebayMedian);
         logger.info("MediaMarkt median price: {}", mediaMarktMedian);
         logger.info("El Corte Inglés median price: {}", corteInglesMedian);
         logger.info("Carrefour median price: {}", carrefourMedian);
+        logger.info("Amazon median price: {}", amazonMedian);
+        logger.info("PcComponentes median price: {}", pccomponentesMedian);
 
         double deviationThreshold = 0.5; // 50% deviation threshold
         List<Product> filteredEbay = filterOutliers(ebayProducts, ebayMedian, deviationThreshold);
         List<Product> filteredMediaMarkt = filterOutliers(mediaMarktProducts, mediaMarktMedian, deviationThreshold);
         List<Product> filteredCorteIngles = filterOutliers(corteInglesProducts, corteInglesMedian, deviationThreshold);
         List<Product> filteredCarrefour = filterOutliers(carrefourProducts, carrefourMedian, deviationThreshold);
+        List<Product> filteredAmazon = filterOutliers(amazonProducts, amazonMedian, deviationThreshold);
+        List<Product> filteredPcComponentes = filterOutliers(pccomponentesProducts, pccomponentesMedian, deviationThreshold);
 
         List<Product> top5Ebay = getTop5ClosestToMedian(filteredEbay, ebayMedian);
         List<Product> top5MediaMarkt = getTop5ClosestToMedian(filteredMediaMarkt, mediaMarktMedian);
         List<Product> top5CorteIngles = getTop5ClosestToMedian(filteredCorteIngles, corteInglesMedian);
         List<Product> top5Carrefour = getTop5ClosestToMedian(filteredCarrefour, carrefourMedian);
+        List<Product> top5Amazon = getTop5ClosestToMedian(filteredAmazon, amazonMedian);
+        List<Product> top5PcComponentes = getTop5ClosestToMedian(filteredPcComponentes, pccomponentesMedian);
 
         List<Product> result = new ArrayList<>();
         result.addAll(top5Ebay);
         result.addAll(top5MediaMarkt);
         result.addAll(top5CorteIngles);
         result.addAll(top5Carrefour);
+        result.addAll(top5Amazon);
+        result.addAll(top5PcComponentes);
 
         return ResponseEntity.ok(result);
     }
