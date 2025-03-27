@@ -28,9 +28,16 @@ public class ScrapMediaMarkt {
 
                 for (int i = 0; i < items.length(); i++) {
                     JSONObject itemWrapper = items.getJSONObject(i);
+
+                    if (!itemWrapper.has("item") || itemWrapper.isNull("item") ||
+                            !(itemWrapper.get("item") instanceof JSONObject)) {
+                        System.out.println("Skipping item at index " + i + " - 'item' is not a JSONObject");
+                        continue;
+                    }
+
                     JSONObject item = itemWrapper.getJSONObject("item");
 
-                    String title = item.getString("name");
+                    String title = item.optString("name", "No title");
                     String image = item.optString("image", "No image found");
                     String url = item.optString("url", "No product url found");
                     JSONObject offers = item.optJSONObject("offers");
@@ -60,6 +67,9 @@ public class ScrapMediaMarkt {
                 }
             }
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            System.err.println("Error scraping MediaMarkt: " + e.getMessage());
             e.printStackTrace();
         }
         return productList;

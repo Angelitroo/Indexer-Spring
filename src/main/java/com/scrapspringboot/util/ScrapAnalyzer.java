@@ -1,5 +1,7 @@
 package com.scrapspringboot.util;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -11,12 +13,26 @@ import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+
+import java.io.File;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import org.openqa.selenium.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 public class ScrapAnalyzer {
-
+    private static final Logger logger = LoggerFactory.getLogger(ScrapAnalyzer.class);
     public static Map<String, Object> analyzePComponentes(ChromeOptions options, String sampleQuery) {
         Map<String, Object> structure = new HashMap<>();
         ChromeDriver driver = new ChromeDriver(options);
@@ -129,5 +145,78 @@ public class ScrapAnalyzer {
         }
         return dataAttributes;
     }
+    public static Map<String, Object> analyzeCarrefour(ChromeOptions options, String sampleQuery) {
+        Map<String, Object> structure = new HashMap<>();
+        ChromeDriver driver = new ChromeDriver(options);
 
+        try {
+            String encodedQuery = URLEncoder.encode(sampleQuery, StandardCharsets.UTF_8);
+            String apiUrl = "https://www.carrefour.es/search-api/query/v1/search" +
+                    "?internal=true" +
+                    "&instance=x-carrefour" +
+                    "&env=https%3A%2F%2Fwww.carrefour.es" +
+                    "&scope=desktop" +
+                    "&lang=es" +
+                    "&session=empathy" +
+                    "&citrusCatalog=home" +
+                    "&raw=true" +
+                    "&catalog=nonFood" +
+                    "&query=" + encodedQuery;
+
+            driver.get(apiUrl);
+            structure.put("url", apiUrl);
+
+            String pageSource = driver.getPageSource();
+
+            String json = pageSource;
+            if (pageSource.contains("<pre>")) {
+                json = pageSource.substring(pageSource.indexOf("<pre>") + 5, pageSource.indexOf("</pre>"));
+            }
+
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode rootNode = mapper.readTree(json);
+
+
+
+
+            JsonNode docs = rootNode.path("content").path("docs");
+
+            if (docs.isArray() && docs.size() > 0) {
+                JsonNode firstProduct = docs.get(0);
+
+                structure.put("title", firstProduct.path("display_name").asText());
+                structure.put("actualPrice", firstProduct.path("active_price").asDouble());
+                structure.put("oldPrice", firstProduct.path("list_price").asDouble());
+
+                double listPrice = firstProduct.path("list_price").asDouble();
+                double activePrice = firstProduct.path("active_price").asDouble();
+                if (listPrice > activePrice) {
+                    double discount = (listPrice - activePrice) / listPrice * 100;
+                    structure.put("discount", String.format("%.0f%%", discount));
+                }
+
+                if (firstProduct.has("image_path") && firstProduct.path("image_path").has("nonFood")) {
+                    structure.put("image", firstProduct.path("image_path").path("nonFood").asText());
+                }
+
+                if (firstProduct.has("urls") && firstProduct.path("urls").has("nonFood")) {
+                    String productPath = firstProduct.path("urls").path("nonFood").asText();
+                    structure.put("productUrl", "https://www.carrefour.es" + productPath);
+                }
+
+                structure.put("totalProducts", docs.size());
+            } else {
+                structure.put("error", "No products found in API response");
+            }
+
+        } catch (Exception e) {
+            structure.put("error", e.getMessage());
+            structure.put("errorType", e.getClass().getName());
+            structure.put("stackTrace", e.getStackTrace()[0].toString());
+        } finally {
+            driver.quit();
+        }
+
+        return structure;
+    }
 }

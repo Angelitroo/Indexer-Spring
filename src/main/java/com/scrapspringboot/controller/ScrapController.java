@@ -23,18 +23,20 @@ public class ScrapController {
     private final ScrapEbay scrapEbay;
     private final ScrapMediaMarkt scrapMediaMarkt;
     private final ScrapElCorteIngles scrapElCorteIngles;
+    private final ScrapCarrefour scrapCarrefour;
     private final ChromeOptions chromeOptions;
 
     public ScrapController(ScrapEbay scrapEbay,
                            ScrapMediaMarkt scrapMediaMarkt,
                            ScrapElCorteIngles scrapElCorteIngles,
+                           ScrapCarrefour scrapCarrefour,
                            ChromeOptions chromeOptions) {
         this.scrapEbay = scrapEbay;
         this.scrapMediaMarkt = scrapMediaMarkt;
         this.scrapElCorteIngles = scrapElCorteIngles;
+        this.scrapCarrefour = scrapCarrefour;
         this.chromeOptions = chromeOptions;
     }
-
 
     @GetMapping("/search/{value}")
     public ResponseEntity<List<Product>> getProducts(@PathVariable String value) {
@@ -42,28 +44,39 @@ public class ScrapController {
         List<Product> ebayProducts = scrapEbay.scrapEbay(value);
         List<Product> mediaMarktProducts = scrapMediaMarkt.scrapMediaMarkt(value);
         List<Product> corteInglesProducts = scrapElCorteIngles.scrapElCorteIngles(value);
+        List<Product> carrefourProducts = scrapCarrefour.scrapCarrefour(value);
 
         logger.info("eBay products found: {}", ebayProducts.size());
         logger.info("MediaMarkt products found: {}", mediaMarktProducts.size());
         logger.info("El Corte Inglés products found: {}", corteInglesProducts.size());
+        logger.info("Carrefour products found: {}", carrefourProducts.size());
+
         double ebayMedian = calculateMedian(ebayProducts);
         double mediaMarktMedian = calculateMedian(mediaMarktProducts);
         double corteInglesMedian = calculateMedian(corteInglesProducts);
+        double carrefourMedian = calculateMedian(carrefourProducts);
+
         logger.info("eBay median price: {}", ebayMedian);
         logger.info("MediaMarkt median price: {}", mediaMarktMedian);
         logger.info("El Corte Inglés median price: {}", corteInglesMedian);
+        logger.info("Carrefour median price: {}", carrefourMedian);
+
         double deviationThreshold = 0.5; // 50% deviation threshold
         List<Product> filteredEbay = filterOutliers(ebayProducts, ebayMedian, deviationThreshold);
         List<Product> filteredMediaMarkt = filterOutliers(mediaMarktProducts, mediaMarktMedian, deviationThreshold);
         List<Product> filteredCorteIngles = filterOutliers(corteInglesProducts, corteInglesMedian, deviationThreshold);
+        List<Product> filteredCarrefour = filterOutliers(carrefourProducts, carrefourMedian, deviationThreshold);
+
         List<Product> top5Ebay = getTop5ClosestToMedian(filteredEbay, ebayMedian);
         List<Product> top5MediaMarkt = getTop5ClosestToMedian(filteredMediaMarkt, mediaMarktMedian);
         List<Product> top5CorteIngles = getTop5ClosestToMedian(filteredCorteIngles, corteInglesMedian);
+        List<Product> top5Carrefour = getTop5ClosestToMedian(filteredCarrefour, carrefourMedian);
 
         List<Product> result = new ArrayList<>();
         result.addAll(top5Ebay);
         result.addAll(top5MediaMarkt);
         result.addAll(top5CorteIngles);
+        result.addAll(top5Carrefour);
 
         return ResponseEntity.ok(result);
     }
@@ -75,9 +88,6 @@ public class ScrapController {
                     double relativeDifference = Math.abs(price - median) / median;
                     // Filter out prices that deviate too much from median
                     return relativeDifference <= deviationThreshold;
-
-
-
                 })
                 .collect(Collectors.toList());
     }
@@ -97,6 +107,7 @@ public class ScrapController {
             return prices.get(size/2);
         }
     }
+
     private List<Product> getTop5ClosestToMedian(List<Product> products, double median) {
         return products.stream()
                 .sorted((p1, p2) -> {
@@ -106,5 +117,12 @@ public class ScrapController {
                 })
                 .limit(5)
                 .collect(Collectors.toList());
+    }
+
+    @GetMapping("/analyze/carrefour")
+    public ResponseEntity<Map<String, Object>> analyzeCarrefour(@RequestParam String query) {
+        logger.info("Analyzing Carrefour structure for query: {}", query);
+        Map<String, Object> result = ScrapAnalyzer.analyzeCarrefour(chromeOptions, query);
+        return ResponseEntity.ok(result);
     }
 }
