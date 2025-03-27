@@ -35,14 +35,14 @@ public class ScrapAmazon {
                 String title = (titulo != null) ? titulo.text() : "No disponible";
 
                 Element precioActual = item.selectFirst("span.a-price span.a-offscreen");
-                String actualPriceText = (precioActual != null) ? precioActual.text().replace("€", "").replace(",", ".") : "0.0";
-                Double actualPrice = Double.parseDouble(actualPriceText);
+                String actualPriceText = cleanPrice(precioActual);
+                double actualPrice = Double.parseDouble(actualPriceText);
 
                 Element precioAntiguo = item.selectFirst("span.a-price.a-text-price span.a-offscreen");
-                String oldPriceText = (precioAntiguo != null) ? precioAntiguo.text().replace("€", "").replace(",", ".") : actualPriceText;
-                Double oldPrice = Double.parseDouble(oldPriceText);
+                String oldPriceText = cleanPrice(precioAntiguo);
+                double oldPrice = oldPriceText.isEmpty() ? actualPrice : Double.parseDouble(oldPriceText);
 
-                String discount = (actualPrice.equals(oldPrice)) ? "No discount" : "-" + String.format("%.2f", ((oldPrice - actualPrice) / oldPrice) * 100) + "%";
+                String discount = (actualPrice == oldPrice) ? "No discount" : "-" + String.format("%.2f", ((oldPrice - actualPrice) / oldPrice) * 100) + "%";
 
                 Element valoracion = item.selectFirst("span.a-icon-alt, i.a-icon-star-small");
                 String rating = (valoracion != null) ? valoracion.text() : "No disponible";
@@ -70,5 +70,17 @@ public class ScrapAmazon {
             e.printStackTrace();
         }
         return products;
+    }
+
+    private String cleanPrice(Element priceElement) {
+        if (priceElement == null) {
+            return "0.0";
+        }
+        String priceText = priceElement.text().replaceAll("[^0-9.,]", "").replace(",", ".");
+        int lastDotIndex = priceText.lastIndexOf(".");
+        if (lastDotIndex != -1) {
+            priceText = priceText.substring(0, lastDotIndex).replace(".", "") + priceText.substring(lastDotIndex);
+        }
+        return priceText;
     }
 }
