@@ -8,7 +8,8 @@ import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -38,6 +39,7 @@ public class Usuario implements UserDetails
     @Column(name = "password")
     private String password;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "rol")
     private Rol rol;
 
