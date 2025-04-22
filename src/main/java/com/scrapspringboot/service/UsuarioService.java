@@ -4,12 +4,12 @@ import com.scrapspringboot.dto.*;
 import com.scrapspringboot.exception.RecursoNoEncontrado;
 import com.scrapspringboot.model.Perfil;
 import com.scrapspringboot.model.Usuario;
-import com.scrapspringboot.model.VerificationToken; // Import new model
+import com.scrapspringboot.model.VerificationToken;
 import com.scrapspringboot.repository.PerfilRepository;
 import com.scrapspringboot.repository.UsuarioRepository;
-import com.scrapspringboot.repository.VerificationTokenRepository; // Import new repository
+import com.scrapspringboot.repository.VerificationTokenRepository;
 import com.scrapspringboot.security.JWTService;
-import lombok.AllArgsConstructor; // Keep or replace with @RequiredArgsConstructor if fields are final
+import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -18,11 +18,10 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional; // Import Transactional
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
-
-import java.time.LocalDateTime;
-import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -39,6 +38,7 @@ public class UsuarioService implements UserDetailsService {
     private final PerfilRepository perfilRepository;
     private final VerificationTokenRepository verificationTokenRepository;
     private final EmailService emailService;
+    private static final Logger log = LoggerFactory.getLogger(UsuarioService.class);
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -85,7 +85,7 @@ public class UsuarioService implements UserDetailsService {
         perfilDTO.setNombre(dto.getNombre());
         perfilDTO.setImagen(dto.getImagen());
         perfilDTO.setBaneado(false);
-        perfilDTO.setActivado(false); //
+        perfilDTO.setActivado(false);
         perfilDTO.setUsuario(usuarioGuardado.getId());
 
         perfilService.guardar(perfilDTO, usuarioGuardado.getId());
@@ -143,20 +143,29 @@ public class UsuarioService implements UserDetailsService {
 
         if (usuarioOpcional.isPresent()) {
             Usuario usuario = usuarioOpcional.get();
+            log.debug("Login attempt for user: {}", usuario.getUsername());
+
             Perfil perfil = perfilRepository.findByUsuarioId(usuario.getId());
 
             if (perfil == null) {
+                log.warn("Login failed for {}: Profile not found.", usuario.getUsername());
                 throw new BadCredentialsException("Error de cuenta. Contacte al administrador.");
             }
+            log.debug("Profile found for {}: activado={}, baneado={}", usuario.getUsername(), perfil.isActivado(), perfil.isBaneado());
+
             if (!perfil.isActivado()) {
+                log.warn("Login failed for {}: Account not activated.", usuario.getUsername());
                 throw new BadCredentialsException("La cuenta no está activada. Por favor, revisa tu correo electrónico para el enlace de activación.");
             }
 
             if (perfil.isBaneado()) {
+                log.warn("Login failed for {}: Account banned.", usuario.getUsername());
                 throw new BadCredentialsException("Esta cuenta ha sido baneada.");
             }
 
+            log.debug("Attempting password match for user {}", usuario.getUsername());
             if (passwordEncoder.matches(dto.getPassword(), usuario.getPassword())) {
+                log.info("Password match successful for user {}", usuario.getUsername()); // Log success
                 String token = jwtService.generateToken(usuario);
                 return ResponseEntity
                         .ok(RespuestaDTO
@@ -164,9 +173,11 @@ public class UsuarioService implements UserDetailsService {
                                 .estado(HttpStatus.OK.value())
                                 .token(token).build());
             } else {
+                log.warn("Login failed for {}: Password mismatch.", usuario.getUsername()); // Log password mismatch
                 throw new BadCredentialsException("Nombre de usuario o contraseña incorrecta.");
             }
         } else {
+            log.warn("Login failed: User not found with username: {}", dto.getUsername()); // Log user not found
             throw new BadCredentialsException("Nombre de usuario o contraseña incorrecta.");
         }
     }
