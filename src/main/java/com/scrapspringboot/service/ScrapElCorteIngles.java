@@ -98,8 +98,8 @@ public class ScrapElCorteIngles {
                     image,
                     rating,
                     delivery,
-                    buildProductUrl(product)
-            );
+                    buildProductUrl(product),
+                    "PCComponentes");
             productList.add(productObj);
         }
     }

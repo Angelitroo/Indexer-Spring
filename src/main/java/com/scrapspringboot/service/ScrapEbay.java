@@ -91,8 +91,8 @@ public class ScrapEbay {
                             image,
                             rating,
                             delivery,
-                            productUrl
-                    );
+                            productUrl,
+                            "PCComponentes");
                     products.add(product);
                 } catch (Exception e) {
                 }

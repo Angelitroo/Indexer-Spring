@@ -90,8 +90,8 @@ public class ScrapCarrefour {
                         image,
                         rating,
                         delivery,
-                        productUrl
-                );
+                        productUrl,
+                        "PCComponentes");
                 products.add(product);
             }
 

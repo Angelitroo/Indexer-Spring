@@ -62,7 +62,7 @@ public class ScrapAmazon {
                         !numReviews.equals("No disponible") &&
                         !productUrl.equals("No disponible")) {
 
-                    Product product = new Product(title, discount, actualPrice, oldPrice, imageUrl, rating, numReviews, productUrl);
+                    Product product = new Product(title, discount, actualPrice, oldPrice, imageUrl, rating, numReviews, productUrl, "PCComponentes");
                     products.add(product);
                 }
             }

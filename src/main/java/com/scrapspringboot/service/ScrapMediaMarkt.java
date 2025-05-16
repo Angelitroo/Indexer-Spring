@@ -61,8 +61,8 @@ public class ScrapMediaMarkt {
                             image,
                             rating,
                             delivery,
-                            url
-                    );
+                            url,
+                            "PCComponentes");
                     productList.add(product);
                 }
             }

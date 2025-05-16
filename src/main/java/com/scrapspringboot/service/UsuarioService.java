@@ -1,6 +1,7 @@
 package com.scrapspringboot.service;
 
 import com.scrapspringboot.dto.*;
+import com.scrapspringboot.enums.Rol;
 import com.scrapspringboot.exception.RecursoNoEncontrado;
 import com.scrapspringboot.model.Perfil;
 import com.scrapspringboot.model.Usuario;
@@ -76,7 +77,7 @@ public class UsuarioService implements UserDetailsService {
         nuevoUsuario.setEmail(dto.getEmail());
         nuevoUsuario.setUsername(dto.getUsername());
         nuevoUsuario.setPassword(passwordEncoder.encode(dto.getPassword()));
-        nuevoUsuario.setRol(dto.getRol());
+        nuevoUsuario.setRol(Rol.USER);
 
         Usuario usuarioGuardado = usuarioRepository.save(nuevoUsuario);
 

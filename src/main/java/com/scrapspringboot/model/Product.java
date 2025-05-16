@@ -1,11 +1,5 @@
 package com.scrapspringboot.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-
-import java.awt.*;
-
 
 public class Product {
     private String title;
@@ -16,8 +10,9 @@ public class Product {
     private String rating;
     private String delivery;
     private String url;
+    private String empresa;
 
-    public Product(String title, String discount, Double actualPrice, Double oldPrice, String image, String rating, String delivery, String url) {
+    public Product(String title, String discount, Double actualPrice, Double oldPrice, String image, String rating, String delivery, String url, String empresa) {
         this.title = title;
         this.discount = discount;
         this.actualPrice = actualPrice;
@@ -26,6 +21,7 @@ public class Product {
         this.rating = rating;
         this.delivery = delivery;
         this.url = url;
+        this.empresa = empresa;
     }
 
     public String getTitle() {
@@ -58,5 +54,13 @@ public class Product {
 
     public String getUrl() {
         return url;
+    }
+
+    public void setEmpresa(String empresa) {
+        this.empresa = empresa;
+    }
+
+    public String getEmpresa() {
+        return empresa;
     }
 }
